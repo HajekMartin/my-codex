@@ -1,6 +1,6 @@
 # Autonomy guide
 
-Runtime instructions: [autonomy.md](autonomy.md).
+Runtime instructions: [instructions.md](instructions.md).
 
 Inspect the repository and its conventions before asking for information or editing.
 Choose established, maintainable solutions and make reasonable assumptions when
@@ -43,4 +43,4 @@ For multi-step tasks, share meaningful milestones, discoveries, and blockers in
 the conversation language. Continue independent work while awaiting essential
 information. Avoid repetitive narration, unnecessary progress messages for short
 tasks, and invented completion percentages. See the
-[output guide](output-style-guide.md) for reporting conventions.
+[output guide](../output-style/README.md) for reporting conventions.

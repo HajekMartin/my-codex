@@ -40,9 +40,11 @@ Official documentation checked on 2026-11-05:
   root to working directory. More specific guidance takes precedence. Discovery
   occurs at startup; the default instruction-size limit is 32 KiB.
 
-No `config.toml` properties are added. The installer concatenates `AGENTS.md`,
-`communication.md`, `autonomy.md`, and `output-style.md` in that order. All required
-rules are embedded. Human guides and examples are excluded; arbitrary Markdown
+No `config.toml` properties are added. The installer concatenates `AGENTS.md`, then
+the `instructions.md` files under `config/communication/`, `config/autonomy/`,
+`config/output-style/`, and `config/git/`, in that order. All required rules are
+embedded. Each area's `README.md` is human documentation and is excluded from
+generated instructions along with its examples; arbitrary Markdown
 imports are not assumed. Generation normalizes UTF-8 BOM and CRLF source endings
 to UTF-8 without BOM and LF, with a final newline for each non-empty module.
 Both platforms refuse generated files at or above 32 KiB. Project instructions
