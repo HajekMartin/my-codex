@@ -23,7 +23,6 @@ my-codex/
 |-- README.md
 |-- AGENTS.md
 |-- .gitattributes
-|-- install.cmd
 |-- config/
 |   |-- communication/
 |   |   |-- instructions.md
@@ -75,13 +74,27 @@ bash scripts/install.sh
 
 **Windows PowerShell** (5.1 or 7; no WSL, Git Bash, or administrator privileges):
 
-For installation from File Explorer, double-click **`install.cmd`** in the
-repository root. It keeps the window open so errors and results remain visible.
-From an existing PowerShell terminal, use:
+Run **`scripts/install.ps1`** from PowerShell, or right-click it
+in File Explorer and choose **Run with PowerShell**. It explains the destination
+and changes, asks for confirmation, and waits for Enter before returning.
 
 ```powershell
 .\scripts\install.ps1
 ```
+
+All three operations live in `scripts/` on every platform:
+
+| Operation | Linux / macOS | Windows |
+| --- | --- | --- |
+| Install | `bash scripts/install.sh` | `.\scripts\install.ps1` |
+| Update | `bash scripts/update.sh` | `.\scripts\update.ps1` |
+| Uninstall | `bash scripts/uninstall.sh` | `.\scripts\uninstall.ps1` |
+
+Every script explains which files it creates, replaces, or deletes and asks
+for confirmation before changes. Enter or an unrecognized answer cancels.
+Shared functions live in `common.sh` and `common.ps1`; there are no CMD launchers.
+Automation can explicitly skip interaction with `--non-interactive` (Bash)
+or `-NonInteractive` (PowerShell).
 
 The destination is `AGENTS.md` in `CODEX_HOME`, or `~/.codex` by default
 (`$HOME\.codex` on Windows). On all platforms, conflicting instructions offer

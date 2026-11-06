@@ -63,16 +63,25 @@ function Write-NewFile {
     try { $stream.Write($Bytes, 0, $Bytes.Length) } finally { $stream.Dispose() }
 }
 
+function Read-SetupInput {
+    param([string]$Prompt)
+    # Write explicitly so the explanation also survives redirected output and logs.
+    Write-Host $Prompt
+    Read-Host
+}
+
 function Read-FileAction {
     param([string]$Target, [string]$Action, [switch]$Interactive)
     if (!$Interactive) {
         throw "Existing instructions preserved: $Target. Run interactively to choose how to proceed."
     }
     Write-Host "Existing instructions: $Target"
+    Write-Host 'This file already exists. Your next choice controls whether its contents are kept or lost.'
     Write-Host '1) Keep file and cancel (default)'
     Write-Host "2) $Action with backup"
     Write-Host "3) $Action without backup"
-    try { $answer = Read-Host 'Choose [1/2/3]' }
+    Write-Host 'Backup saves a separate copy beside AGENTS.md. Without backup, the old contents are lost.'
+    try { $answer = Read-SetupInput 'Choose [1/2/3]' }
     catch { throw 'Confirmation is unavailable. Existing instructions preserved; run in an interactive terminal.' }
     if ($null -ne $answer) {
         switch ($answer.Trim()) {
@@ -96,6 +105,62 @@ function Publish-InstructionReplacement {
         [IO.File]::Replace($Source, $Target, $backupPath)
         Write-Output "Original instructions backed up to: $backupPath"
     } else { [IO.File]::Replace($Source, $Target, [NullString]::Value) }
+}
+
+function Invoke-SetupConsole {
+    param([ValidateSet('install', 'update', 'uninstall')][string]$Mode,
+        [string]$Repository, [switch]$NonInteractive, [switch]$NoPause)
+    try {
+        $directory = Get-CodexDirectory
+        Write-Host ''
+        Write-Host 'my-codex setup' -ForegroundColor Cyan
+        Write-Host "Source: $Repository"
+        Write-Host "Destination: $(Join-Path $directory 'AGENTS.md')"
+        Write-Host 'This file contains global instructions used across your Codex projects.'
+        Write-Host 'Credentials, sessions, Skills, and other settings are kept.'
+        $target = Join-Path $directory 'AGENTS.md'
+        $snapshot = Join-Path $directory '.my-codex/installed.md'
+        if (Test-Entry $snapshot) {
+            Write-Host 'Status: managed installation found.'
+            if (!(Test-SameBytes $target $snapshot)) { Write-Host 'AGENTS.md differs from the saved installation. A separate conflict choice will protect your edits.' }
+        } elseif (Test-Entry $target) {
+            Write-Host 'Status: existing AGENTS.md is not managed by this installer. Installation will ask how to handle it.'
+        } else { Write-Host 'Status: no installed AGENTS.md found.' }
+        Write-Host ''
+        switch ($Mode) {
+            'install' {
+                Write-Host "Install creates $target from the five source modules."
+                Write-Host "It also creates $snapshot to track this installation."
+                Write-Host 'An existing unmanaged or manually edited AGENTS.md requires a separate keep/backup/replace choice.'
+                Write-Host 'An unchanged managed installation is kept. Use update.ps1 to apply new source instructions.'
+            }
+            'update' {
+                Write-Host "Update replaces $target and $snapshot with the current source instructions."
+                Write-Host 'The previous managed contents are replaced. Manual edits require a separate keep/backup/replace choice.'
+                Write-Host 'Update requires an existing managed installation. It does not create one.'
+            }
+            'uninstall' {
+                Write-Host "Uninstall deletes $target and $snapshot only if this installation owns them."
+                Write-Host 'Manual edits require a separate keep/backup/remove choice. Unmanaged instructions are kept.'
+                Write-Host 'Existing backups and other files in the Codex directory are kept.'
+            }
+        }
+        if (!$NonInteractive) {
+            $answer = Read-SetupInput "Are you sure you want to $Mode ? [y/N]"
+            if ($answer -notmatch '^(?i:y|yes)$') { Write-Host 'Cancelled. No files changed.'; return 0 }
+        }
+        Write-Host "Checking files and running $Mode..."
+        Invoke-Configuration -Mode $Mode -Repository $Repository -Interactive:(!$NonInteractive) | Out-Host
+        Write-Host 'Finished. Review the result above.' -ForegroundColor Green
+        return 0
+    } catch {
+        Write-Host ''
+        Write-Host "Setup failed: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host 'Details and recovery guidance: docs/installation.md'
+        return 1
+    } finally {
+        if (!$NonInteractive -and !$NoPause) { $null = Read-SetupInput 'Press Enter to close' }
+    }
 }
 
 function Invoke-Configuration {
@@ -151,7 +216,7 @@ function Invoke-Configuration {
             Write-Output "Removed managed instructions: $target. Skills and other settings were not changed."
             return
         }
-        if (!$managed -and $Mode -eq 'update') { throw 'No managed installation. Run install.ps1 first.' }
+        if (!$managed -and $Mode -eq 'update') { throw 'No managed installation. Run .\scripts\install.ps1 first.' }
         $generated = Join-Path $lock 'generated.md'
         Write-NewFile $generated (Get-InstructionBytes $Repository)
         $replaceExisting = !$managed -and (Test-Entry $target)

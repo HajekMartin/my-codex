@@ -11,6 +11,9 @@ script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 source "$script_dir/common.sh"
 codex_dir=${CODEX_HOME:-${HOME:?HOME is required when CODEX_HOME is unset}/.codex}
 [[ "$codex_dir" = /* ]] || die 'CODEX_HOME must be an absolute path.'
+target=$codex_dir/AGENTS.md
+state=$codex_dir/.my-codex
+confirm_operation uninstall
 [[ -e "$codex_dir" ]] || { printf 'Nothing installed: %s\n' "$codex_dir"; exit 0; }
 codex_dir=$(cd -- "$codex_dir" && pwd -P)
 target=$codex_dir/AGENTS.md

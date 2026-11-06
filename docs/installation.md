@@ -6,18 +6,26 @@ PowerShell 5.1 or 7 and .NET, without administrator privileges or a Unix shell.
 
 ## Visible Windows installation
 
-Double-click `install.cmd` in the repository root to install from File Explorer.
-The launcher uses Windows PowerShell 5.1, displays the installer's output, and waits
-for a key before closing on success or failure. This also exposes execution-policy,
-syntax, and startup errors that occur before the installer's own code can run.
-It does not elevate privileges or change execution policy. Run it from the extracted
-or cloned repository, keeping the `scripts/` and `config/` directories beside it.
+Run `./scripts/install.ps1` from a PowerShell terminal in the repository root, or
+right-click `scripts/install.ps1` in File Explorer and choose **Run with PowerShell**.
+Use `update.ps1` to update and `uninstall.ps1` to remove the managed instructions.
+Each script shows the source, destination, installation status, and exact files
+it creates, replaces, or deletes. It asks before changes.
+The script catches runtime errors and waits for Enter before returning on success,
+cancellation, or failure. It does not elevate privileges or change execution policy.
+Keep the repository structure intact. The script finds `config/` and `AGENTS.md`
+in the parent directory, regardless of the current working directory.
 
-For an existing PowerShell terminal or automation, use `scripts/install.ps1`
-directly. That script also works with PowerShell 7. The launcher is interactive
-only and returns the PowerShell process's exit code after its closing pause.
-If installation still fails, copy the error text from the open window; keeping
-the window open does not itself resolve the underlying error.
+All entry points live in `scripts/`: `install`, `update`, and `uninstall`, each
+with a `.sh` version for Linux/macOS and a `.ps1` version for Windows.
+Shared functions live in `common.sh` and `common.ps1`. There are no CMD launchers
+or root-level installers. Windows scripts support PowerShell 5.1 and 7.
+Use `-NoPause` to skip only the final wait in an existing terminal.
+Use `-NonInteractive` for automation: no confirmation, conflict prompt, or closing wait.
+Each script still performs its named operation. Failures return exit code 1.
+If execution policy blocks startup or the script cannot be parsed, its own error
+handling cannot run. Start it from an existing PowerShell terminal to keep those
+startup errors visible. An ordinary double-click can open the editor instead.
 
 ## Profiles and supported mechanisms
 
@@ -81,15 +89,22 @@ manually. Option 3 does not retain the previous contents. The internal ownership
 snapshot always records the new managed instructions; it is not an original-file
 backup and is still required for safe updates and removal.
 
-All three PowerShell scripts accept `-NonInteractive`; all three Bash scripts
+All three Windows scripts accept `-NonInteractive`; all three Bash scripts
 accept `--non-interactive`. In this mode conflicts fail without prompting or
 overwriting. Normal installation, updates, and removal of unchanged managed
 instructions remain unattended and do not create optional backups.
+On every platform, normal runs ask "Are you sure" before any changes, including
+creating the Codex directory. The explanation names `AGENTS.md` and
+`.my-codex/installed.md`. Install creates them; update replaces their managed
+contents; uninstall deletes them only for an owned installation.
+Blank, EOF, or unrecognized answers cancel without changes. If existing unmanaged
+instructions or manual edits are found, a separate conflict choice follows.
+The conflict menu explains that option 3 loses the previous contents without backup.
 Global `AGENTS.override.md` blocks installation and update on all platforms,
 because it can shadow these instructions. No automatic merge or force option exists.
 
 An unchanged managed installation can be installed again without changes. Run
-`update.sh` or `update.ps1` after editing or pulling source changes. Update requires
+`bash scripts/update.sh` or `./scripts/update.ps1` after source changes. Update requires
 a managed installation; local edits trigger the conflict menu before replacement.
 Successful updates replace instructions and ownership snapshot. Existing installations from the original Bash installer
 use the same snapshot format and can be updated directly.

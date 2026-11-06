@@ -17,6 +17,9 @@ repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 source "$repo_dir/scripts/common.sh"
 codex_dir=${CODEX_HOME:-${HOME:?HOME is required when CODEX_HOME is unset}/.codex}
 [[ "$codex_dir" = /* ]] || die 'CODEX_HOME must be an absolute path.'
+target=$codex_dir/AGENTS.md
+state=$codex_dir/.my-codex
+confirm_operation "$mode"
 mkdir -p -- "$codex_dir"
 codex_dir=$(cd -- "$codex_dir" && pwd -P)
 target=$codex_dir/AGENTS.md
