@@ -63,7 +63,12 @@ Official documentation checked on 2026-11-05:
   root to working directory. More specific guidance takes precedence. Discovery
   occurs at startup; the default instruction-size limit is 32 KiB.
 
-No `config.toml` properties are added. The installer concatenates `AGENTS.md`, then
+The installer reviews supported active preferences from `config/codex/config.toml`
+and merges only user-approved values. The complete per-key workflow and conservative
+TOML editing limits are documented in [Codex settings](../config/codex/README.md).
+The template contains no permissions, credentials, or machine-specific paths.
+
+For instructions, the installer concatenates `AGENTS.md`, then
 the `instructions.md` files under `config/communication/`, `config/autonomy/`,
 `config/output-style/`, and `config/git/`, in that order. All required rules are
 embedded. Each area's `README.md` is human documentation and is excluded from
@@ -95,7 +100,8 @@ overwriting. Normal installation, updates, and removal of unchanged managed
 instructions remain unattended and do not create optional backups.
 On every platform, normal runs ask "Are you sure" before any changes, including
 creating the Codex directory. The explanation names `AGENTS.md` and
-`.my-codex/installed.md`. Install creates them; update replaces their managed
+`.my-codex/installed.md`, and the separate `config.toml` preference review.
+Install creates the instruction files; update replaces their managed
 contents; uninstall deletes them only for an owned installation.
 Blank, EOF, or unrecognized answers cancel without changes. If existing unmanaged
 instructions or manual edits are found, a separate conflict choice follows.
@@ -120,6 +126,7 @@ Uninstall removes managed instructions and their snapshot. Modified instructions
 require a conflict choice before removal. It leaves
 the Codex directory, credentials, sessions, Skills, unrelated settings, and unexpected
 state files intact. Without a managed installation it preserves existing files.
+`config.toml`, including accepted preferences, is kept during uninstall.
 Restore any previous configuration you moved aside yourself after successful removal.
 
 ## Filesystem mechanics and interruptions

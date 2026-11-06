@@ -11,8 +11,9 @@ instructions and specialized workflows in Git, with safe installation and update
 | --- | --- |
 | [Communication](config/communication/README.md) | Automatic response language detection, concise writing, consistent technical terminology |
 | [Autonomy](config/autonomy/README.md) | Independent decisions, fewer unnecessary questions, task completion and verification |
-| [Output Style](config/output-style/README.md) | Complete Busy Lukas rules, colored sections, simple wording, no other emoji |
+| [Output Style](config/output-style/README.md) | Personal Codex Style: colored sections, simple wording, no other emoji |
 | [Git Workflow](config/git/README.md) | Task branches, repository checks, correct commit identity, and safe publication |
+| [Codex Settings](config/codex/README.md) | Portable `config.toml` preferences reviewed one by one during setup |
 | [Skills](skills/README.md) | Reusable workflows for specialized tasks |
 | [Installation](docs/installation.md) | Safe deployment and updates on macOS, Linux, and Windows |
 
@@ -33,8 +34,11 @@ my-codex/
 |   |-- output-style/
 |   |   |-- instructions.md
 |   |   `-- README.md
-|   `-- git/
-|       |-- instructions.md
+|   |-- git/
+|   |   |-- instructions.md
+|   |   `-- README.md
+|   `-- codex/
+|       |-- config.toml
 |       `-- README.md
 |-- docs/
 |   `-- installation.md
@@ -48,6 +52,9 @@ my-codex/
     |-- uninstall.sh
     |-- uninstall.ps1
     |-- common.sh
+    |-- config-toml.sh
+    |-- config-toml.awk
+    |-- config-toml.ps1
     `-- common.ps1
 ```
 
@@ -55,6 +62,8 @@ my-codex/
 The adjacent guides are human documentation and are not installed as instructions.
 `scripts/` contains installation, update, and removal scripts; `skills/` holds reusable Skill
 sources when added. No Skills are installed automatically.
+Install and update review active TOML template values one by one. Existing unrelated
+settings are preserved. See [Codex settings](config/codex/README.md).
 
 ## Installation
 
@@ -100,6 +109,8 @@ The destination is `AGENTS.md` in `CODEX_HOME`, or `~/.codex` by default
 (`$HOME\.codex` on Windows). On all platforms, conflicting instructions offer
 three choices: keep the file, replace with backup, or replace without backup.
 Enter keeps the file. Overrides and invalid installation state remain protected.
+For each missing or different TOML preference, answer `y` to apply it or Enter to
+keep the current value. Backups are optional.
 Start a new Codex session after installing.
 
 For custom profiles, PowerShell execution-policy guidance, and conflict resolution,
@@ -136,6 +147,7 @@ bash scripts/uninstall.sh
 
 Use the same profile. Removal preserves credentials, sessions, Skills, unrelated
 settings, and manually modified instructions.
+`config.toml` is kept, including preferences previously accepted during setup.
 
 ## Customization
 

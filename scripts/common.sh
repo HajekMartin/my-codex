@@ -31,6 +31,10 @@ confirm_operation() {
             ;;
     esac
     printf 'Credentials, sessions, Skills, and other settings are kept.\n'
+    if [[ "$operation" != uninstall ]]; then
+        printf 'Preferences: %s/config.toml\nActive template preferences are reviewed one by one. Enter keeps the current value.\n' "$codex_dir"
+        printf 'Automation adds missing preferences and keeps different existing values.\n'
+    else printf 'config.toml preferences are kept; uninstall does not reset them.\n'; fi
     if [[ "$non_interactive" = false ]]; then
         printf 'Are you sure you want to %s? [y/N]: ' "$operation"
         local answer=
