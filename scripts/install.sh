@@ -5,9 +5,16 @@ umask 077
 
 die() { printf 'Error: %s\n' "$*" >&2; exit 1; }
 mode=install
-if [[ $# -eq 1 && "$1" = --update ]]; then mode=update
-elif [[ $# -ne 0 ]]; then die 'Usage: bash scripts/install.sh'; fi
+non_interactive=false
+for argument in "$@"; do
+    case "$argument" in
+        --update) mode=update ;;
+        --non-interactive) non_interactive=true ;;
+        *) die 'Usage: bash scripts/install.sh [--non-interactive]' ;;
+    esac
+done
 repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
+source "$repo_dir/scripts/common.sh"
 codex_dir=${CODEX_HOME:-${HOME:?HOME is required when CODEX_HOME is unset}/.codex}
 [[ "$codex_dir" = /* ]] || die 'CODEX_HOME must be an absolute path.'
 mkdir -p -- "$codex_dir"
@@ -43,13 +50,19 @@ trap 'exit 143' TERM
 if [[ -e "$state" ]]; then
     [[ -d "$state" && -f "$state/installed.md" && ! -L "$state/installed.md" ]] ||
         die "Unrecognized installation state: $state. Inspect it manually."
-    [[ -f "$target" ]] && cmp -s -- "$target" "$state/installed.md" ||
-        die "Installed AGENTS.md is missing or changed: $target. Preserve your edits and resolve manually."
-    if cmp -s -- "$target" "$lock/generated.md"; then
+    [[ -f "$target" ]] || die "Installed AGENTS.md is missing or not a regular file: $target. Resolve manually."
+    locally_modified=false
+    if ! cmp -s -- "$target" "$state/installed.md"; then
+        locally_modified=true
+        choose_file_action Replace
+        [[ "$file_action" != keep ]] || { printf 'Cancelled; existing instructions preserved.\n'; exit 0; }
+        if [[ "$file_action" = backup ]]; then backup_current_file; fi
+    fi
+    if [[ "$locally_modified" = false ]] && cmp -s -- "$target" "$lock/generated.md"; then
         printf 'Already installed and unchanged: %s\n' "$target"
         exit 0
     fi
-    [[ "$mode" = update ]] || die 'Source instructions changed. Run bash scripts/update.sh. Existing instructions were preserved.'
+    [[ "$mode" = update || "$locally_modified" = true ]] || die 'Source instructions changed. Run bash scripts/update.sh. Existing instructions were preserved.'
     cp -- "$lock/generated.md" "$lock/installed.md"
     mv -f -- "$lock/generated.md" "$target"
     mv -f -- "$lock/installed.md" "$state/installed.md"
@@ -57,8 +70,14 @@ if [[ -e "$state" ]]; then
     exit 0
 fi
 [[ "$mode" = install ]] || die 'No managed installation. Run install.sh first.'
-[[ ! -e "$target" && ! -L "$target" ]] ||
-    die "Existing configuration preserved: $target. Review and move it aside yourself before installing; no automatic merge or overwrite."
+replace_existing=false
+if [[ -e "$target" ]]; then
+    [[ -f "$target" ]] || die "Expected a regular file at $target. Existing entry preserved."
+    choose_file_action Replace
+    [[ "$file_action" != keep ]] || { printf 'Cancelled; existing instructions preserved.\n'; exit 0; }
+    if [[ "$file_action" = backup ]]; then backup_current_file; fi
+    replace_existing=true
+fi
 
 # Publish a snapshot and target without replacing an existing filesystem entry.
 cp -- "$lock/generated.md" "$lock/installed.md"
@@ -67,7 +86,14 @@ if ! ln -- "$lock/installed.md" "$state/installed.md"; then
     rmdir -- "$state" 2>/dev/null || true
     die 'Could not create installation snapshot; AGENTS.md was not installed.'
 fi
-if ! ln -- "$lock/generated.md" "$target"; then
+publish_instructions() {
+    if [[ "$replace_existing" = true ]]; then
+        mv -f -- "$lock/generated.md" "$target"
+    else
+        ln -- "$lock/generated.md" "$target"
+    fi
+}
+if ! publish_instructions; then
     rm -f -- "$state/installed.md"
     rmdir -- "$state" 2>/dev/null || true
     die 'Could not publish AGENTS.md; any existing target was preserved.'

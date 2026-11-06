@@ -4,6 +4,21 @@ Use the [overview commands](../README.md#installation) from the repository root.
 Bash 3.2+ and standard Unix utilities are required on macOS/Linux. Windows uses
 PowerShell 5.1 or 7 and .NET, without administrator privileges or a Unix shell.
 
+## Visible Windows installation
+
+Double-click `install.cmd` in the repository root to install from File Explorer.
+The launcher uses Windows PowerShell 5.1, displays the installer's output, and waits
+for a key before closing on success or failure. This also exposes execution-policy,
+syntax, and startup errors that occur before the installer's own code can run.
+It does not elevate privileges or change execution policy. Run it from the extracted
+or cloned repository, keeping the `scripts/` and `config/` directories beside it.
+
+For an existing PowerShell terminal or automation, use `scripts/install.ps1`
+directly. That script also works with PowerShell 7. The launcher is interactive
+only and returns the PowerShell process's exit code after its closing pause.
+If installation still fails, copy the error text from the open window; keeping
+the window open does not itself resolve the underlying error.
+
 ## Profiles and supported mechanisms
 
 Both implementations use `CODEX_HOME`, otherwise the user's `.codex` directory.
@@ -52,24 +67,42 @@ can still consume additional context, so keep global modules compact.
 
 ## Install, update, and ownership
 
-Fresh installation refuses an existing unmanaged `AGENTS.md`, even an empty or
-identical file. Review and back it up outside the target path before deliberately
-moving it aside. Global `AGENTS.override.md` also blocks installation and update
+All platforms use the same conflict menu when installing over an unmanaged
+`AGENTS.md` or replacing/removing manually edited managed instructions:
+
+1. Keep the file and cancel (default).
+2. Replace/remove with backup.
+3. Replace/remove without backup.
+
+Enter, EOF, or an unrecognized answer preserves the file. A backup is made only
+when option 2 is selected, beside the original, named
+`AGENTS.backup-<timestamp>-<unique-id>`. It survives uninstall and can be restored
+manually. Option 3 does not retain the previous contents. The internal ownership
+snapshot always records the new managed instructions; it is not an original-file
+backup and is still required for safe updates and removal.
+
+All three PowerShell scripts accept `-NonInteractive`; all three Bash scripts
+accept `--non-interactive`. In this mode conflicts fail without prompting or
+overwriting. Normal installation, updates, and removal of unchanged managed
+instructions remain unattended and do not create optional backups.
+Global `AGENTS.override.md` blocks installation and update on all platforms,
 because it can shadow these instructions. No automatic merge or force option exists.
 
 An unchanged managed installation can be installed again without changes. Run
 `update.sh` or `update.ps1` after editing or pulling source changes. Update requires
-a managed installation, verifies it has not been edited, then replaces its instructions
-and ownership snapshot. Existing installations from the original Bash installer
+a managed installation; local edits trigger the conflict menu before replacement.
+Successful updates replace instructions and ownership snapshot. Existing installations from the original Bash installer
 use the same snapshot format and can be updated directly.
 
 The ownership snapshot is `.my-codex/installed.md` in Codex home. It is independent
-of the installed instructions. Manual edits, missing managed files, unrecognized
-state, and linked instruction/state entries cause a refusal. Windows also refuses
+of the installed instructions. Manual edits require an explicit conflict choice.
+Missing managed files, unrecognized state, and linked instruction/state entries
+cause a refusal. Windows also refuses
 reparse points at these entries, including junctions. Preserve edits before
 resolving conflicts manually; do not delete ownership state merely to bypass checks.
 
-Uninstall removes only the unchanged managed instructions and snapshot. It leaves
+Uninstall removes managed instructions and their snapshot. Modified instructions
+require a conflict choice before removal. It leaves
 the Codex directory, credentials, sessions, Skills, unrelated settings, and unexpected
 state files intact. Without a managed installation it preserves existing files.
 Restore any previous configuration you moved aside yourself after successful removal.
