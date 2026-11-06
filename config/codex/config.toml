@@ -1,0 +1,19 @@
+# Portable response preferences. Install/update review active keys one by one.
+# Commented keys are ignored. Existing config.toml is never replaced wholesale.
+# Reference: https://learn.chatgpt.com/docs/config-file/config-reference
+
+# Supported compatibility setting: omit the built-in Personality section.
+# This does not remove other client instructions or enforce the AGENTS.md format.
+personality = "none"
+
+# Optional next step: prefer shorter answers when the model supports this parameter.
+# First compare the personality-only change in fresh chats with the same model.
+# model_verbosity = "low"
+
+# Optional: shorten reasoning summaries when the model/client supports this setting.
+# This is separate from task progress updates and final-answer formatting.
+# model_reasoning_summary = "concise"
+
+# Optional CLI display preference. Documented for TUI and codex exec output.
+# Do not assume this hides reasoning events in the VS Code extension.
+# hide_agent_reasoning = true

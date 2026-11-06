@@ -1,6 +1,7 @@
 # Shared native Windows implementation; requires Windows PowerShell 5.1 or later.
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'config-toml.ps1')
 
 function Get-CodexDirectory {
     param([string]$UserHome = [Environment]::GetFolderPath('UserProfile'))
@@ -117,6 +118,11 @@ function Invoke-SetupConsole {
         Write-Host "Source: $Repository"
         Write-Host "Destination: $(Join-Path $directory 'AGENTS.md')"
         Write-Host 'This file contains global instructions used across your Codex projects.'
+        if ($Mode -ne 'uninstall') {
+            Write-Host "Preferences: $(Join-Path $directory 'config.toml')"
+            Write-Host 'Active template preferences are reviewed one by one. Enter keeps the current value.'
+            Write-Host 'Automation adds missing preferences and keeps different existing values.'
+        } else { Write-Host 'config.toml preferences are kept; uninstall does not reset them.' }
         Write-Host 'Credentials, sessions, Skills, and other settings are kept.'
         $target = Join-Path $directory 'AGENTS.md'
         $snapshot = Join-Path $directory '.my-codex/installed.md'
@@ -219,6 +225,7 @@ function Invoke-Configuration {
         if (!$managed -and $Mode -eq 'update') { throw 'No managed installation. Run .\scripts\install.ps1 first.' }
         $generated = Join-Path $lock 'generated.md'
         Write-NewFile $generated (Get-InstructionBytes $Repository)
+        $preferencePlan = New-PreferencePlan -Repository $Repository -Directory $directory -Interactive:$Interactive
         $replaceExisting = !$managed -and (Test-Entry $target)
         if ($replaceExisting -or $locallyModified) {
             if (!(Test-Path -LiteralPath $target -PathType Leaf)) {
@@ -231,12 +238,17 @@ function Invoke-Configuration {
             }
         }
         if ($managed) {
-            if (!$locallyModified -and (Test-SameBytes $target $generated)) { Write-Output "Already installed and unchanged: $target"; return }
+            if (!$locallyModified -and (Test-SameBytes $target $generated)) {
+                Write-Output "Already installed and unchanged: $target"
+                Publish-PreferencePlan -Plan $preferencePlan -Lock $lock
+                return
+            }
             if ($Mode -ne 'update' -and !$locallyModified) { throw 'Source instructions changed. Run .\scripts\update.ps1. Existing instructions were preserved.' }
             $nextSnapshot = Join-Path $lock 'installed.md'
             [IO.File]::Copy($generated, $nextSnapshot)
             Publish-InstructionReplacement -Source $generated -Target $target -Backup:($fileAction -eq 'backup')
             [IO.File]::Replace($nextSnapshot, $snapshot, [NullString]::Value)
+            Publish-PreferencePlan -Plan $preferencePlan -Lock $lock
             Write-Output "Updated managed instructions: $target. Start a new Codex session."
         } else {
             $null = New-Item -ItemType Directory -Path $state -ErrorAction Stop
@@ -251,10 +263,11 @@ function Invoke-Configuration {
                 if (@(Get-ChildItem -LiteralPath $state -Force).Count -eq 0) { [IO.Directory]::Delete($state) }
                 throw
             }
+            Publish-PreferencePlan -Plan $preferencePlan -Lock $lock
             Write-Output "Installed complete instructions: $target. Start a new Codex session. Skills were not changed."
         }
     } finally {
-        foreach ($name in @('generated.md', 'installed.md')) {
+        foreach ($name in @('generated.md', 'installed.md', 'config-next.toml')) {
             $temporary = Join-Path $lock $name
             if (Test-Entry $temporary) { Remove-Item -LiteralPath $temporary }
         }

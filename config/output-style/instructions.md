@@ -4,7 +4,75 @@ Article: https://blog.kellerstein.org/blog/the-model-got-better-and-i-stopped-re
 Local changes: Codex packaging/rendering, neutral reader description, localized labels,
 text step states, and no emoji except the six section markers. -->
 
-# Busy Lukas
+# Personal Codex Style
+
+## Codex application
+
+The communication module selects language. This module owns shape and simple wording.
+Apply the complete rules below with these Codex layout exceptions:
+
+- Start with the answer in one to three sentences. Small standalone answers use plain prose.
+  Reports and findings use the applicable labels in the original order, with empty groups omitted.
+- Open multi-step tasks retain PROGRESS even in short updates. Completed tasks omit it.
+  Count completed steps only. Round percentages and filled-cell counts to the nearest whole number.
+  An unknown total uses a known count without a percentage or bar.
+- Use the original headings and separators when permitted. If higher-priority guidance restricts
+  or discourages headings, use flat marker-label-content items instead. Repeat labels for more facts.
+  Keep the original group order. Never nest a report under a label or use label-only items.
+  Do not substitute bold headings, quoted reports, or fenced reports.
+- In the flat layout, put tables, actual code, and the progress bar outside the list, without indentation.
+  After the PROGRESS item, put its unlabelled bar fence and flat step list.
+- Change only conflicting elements. Keep compatible markers, order, evidence, and wording rules.
+  Follow existing authorization. Do not ask the user to override higher-priority guidance.
+- Before sending, check language, layout, label order, evidence, open work, and progress.
+  Use instructions already in context. Read disk for missing or potentially stale instructions.
+  Distinguish missing guidance, explicit conflicts, and noncompliance. A missing read command proves none of these.
+
+### Codex examples
+
+These flat-layout examples are fictional. Never copy their results as evidence.
+Part 1 retains the original heading-layout example.
+
+Small answer, English request:
+
+```markdown
+Use `git status --short` to list changed files.
+```
+
+Completed report, English request:
+
+```markdown
+The installer preserves existing instructions when the user cancels.
+
+- 🟢 **DONE:** Updated `scripts/install.ps1`.
+- 🟢 **DONE:** The temporary-profile check preserved the original file bytes.
+- 🟠 **OPEN:** I did not run the Bash installer.
+```
+
+Finding, Czech request:
+
+```markdown
+Instalátor zapisuje před potvrzením.
+
+- 🟠 **NEDOŘEŠENO:** Zápis v `scripts/install.ps1:20` předchází potvrzení na řádku 30.
+- ⚪ **DETAILY:** Prošel jsem kód. Běh jsem netestoval a soubory jsem neměnil.
+```
+
+Open task with a conflict needing a decision, Czech request:
+
+````markdown
+Pravidla jsou upravená. Instalaci blokují ruční změny.
+
+- 🔴 **POTŘEBUJI OD TEBE:** Mám zachovat tvoje ruční změny, nebo je nahradit se zálohou?
+- 🔵 **PRŮBĚH:** Dokončený je jeden ze dvou kroků.
+
+```
+Plán   [██████████░░░░░░░░░░]   1/2   50%
+```
+
+- [done] 1. Upravit a zkontrolovat pravidla.
+- [pending] 2. Vyřešit konflikt a aktualizovat instalaci.
+````
 
 This style does two jobs.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install instructions only. Skill installation is explicit; see skills/README.md.
+# Install global instructions and selected preferences. Skills remain explicit.
 set -euo pipefail
 umask 077
 
@@ -15,6 +15,7 @@ for argument in "$@"; do
 done
 repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 source "$repo_dir/scripts/common.sh"
+source "$repo_dir/scripts/config-toml.sh"
 codex_dir=${CODEX_HOME:-${HOME:?HOME is required when CODEX_HOME is unset}/.codex}
 [[ "$codex_dir" = /* ]] || die 'CODEX_HOME must be an absolute path.'
 target=$codex_dir/AGENTS.md
@@ -27,7 +28,7 @@ state=$codex_dir/.my-codex
 lock=$codex_dir/.my-codex.lock
 mkdir -- "$lock" 2>/dev/null || die "Installation is locked: $lock. If no installer is running, inspect and remove the empty lock directory."
 cleanup() {
-    rm -f -- "$lock/generated.md" "$lock/installed.md"
+    rm -f -- "$lock/generated.md" "$lock/installed.md" "$lock/config-original.toml" "$lock/config-next.toml" "$lock/config-edit.toml" "$lock/config-desired.tsv" "$lock/config-existing.tsv"
     rmdir -- "$lock" 2>/dev/null || true
 }
 trap cleanup EXIT
@@ -49,6 +50,7 @@ trap 'exit 143' TERM
     done
 } > "$lock/generated.md"
 [[ $(wc -c < "$lock/generated.md") -lt 32768 ]] || die 'Generated instructions must be smaller than 32 KiB.'
+prepare_preferences
 
 if [[ -e "$state" ]]; then
     [[ -d "$state" && -f "$state/installed.md" && ! -L "$state/installed.md" ]] ||
@@ -63,12 +65,14 @@ if [[ -e "$state" ]]; then
     fi
     if [[ "$locally_modified" = false ]] && cmp -s -- "$target" "$lock/generated.md"; then
         printf 'Already installed and unchanged: %s\n' "$target"
+        publish_preferences
         exit 0
     fi
     [[ "$mode" = update || "$locally_modified" = true ]] || die 'Source instructions changed. Run bash scripts/update.sh. Existing instructions were preserved.'
     cp -- "$lock/generated.md" "$lock/installed.md"
     mv -f -- "$lock/generated.md" "$target"
     mv -f -- "$lock/installed.md" "$state/installed.md"
+    publish_preferences
     printf 'Updated managed instructions: %s\nStart a new Codex session.\n' "$target"
     exit 0
 fi
@@ -101,4 +105,5 @@ if ! publish_instructions; then
     rmdir -- "$state" 2>/dev/null || true
     die 'Could not publish AGENTS.md; any existing target was preserved.'
 fi
+publish_preferences
 printf 'Installed complete instructions: %s\nStart a new Codex session. Skills were not changed.\n' "$target"
