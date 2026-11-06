@@ -63,8 +63,109 @@ function Write-NewFile {
     try { $stream.Write($Bytes, 0, $Bytes.Length) } finally { $stream.Dispose() }
 }
 
+function Read-SetupInput {
+    param([string]$Prompt)
+    # Write explicitly so the explanation also survives redirected output and logs.
+    Write-Host $Prompt
+    Read-Host
+}
+
+function Read-FileAction {
+    param([string]$Target, [string]$Action, [switch]$Interactive)
+    if (!$Interactive) {
+        throw "Existing instructions preserved: $Target. Run interactively to choose how to proceed."
+    }
+    Write-Host "Existing instructions: $Target"
+    Write-Host 'This file already exists. Your next choice controls whether its contents are kept or lost.'
+    Write-Host '1) Keep file and cancel (default)'
+    Write-Host "2) $Action with backup"
+    Write-Host "3) $Action without backup"
+    Write-Host 'Backup saves a separate copy beside AGENTS.md. Without backup, the old contents are lost.'
+    try { $answer = Read-SetupInput 'Choose [1/2/3]' }
+    catch { throw 'Confirmation is unavailable. Existing instructions preserved; run in an interactive terminal.' }
+    if ($null -ne $answer) {
+        switch ($answer.Trim()) {
+            '2' { return 'backup' }
+            '3' { return 'replace' }
+        }
+    }
+    return 'keep'
+}
+
+function Get-InstructionBackupPath {
+    param([string]$Target)
+    Join-Path (Split-Path $Target -Parent) ('AGENTS.backup-' + [DateTime]::Now.ToString('yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N'))
+}
+
+function Publish-InstructionReplacement {
+    param([string]$Source, [string]$Target, [switch]$Backup)
+    Assert-RegularEntry $Target
+    if ($Backup) {
+        $backupPath = Get-InstructionBackupPath $Target
+        [IO.File]::Replace($Source, $Target, $backupPath)
+        Write-Output "Original instructions backed up to: $backupPath"
+    } else { [IO.File]::Replace($Source, $Target, [NullString]::Value) }
+}
+
+function Invoke-SetupConsole {
+    param([ValidateSet('install', 'update', 'uninstall')][string]$Mode,
+        [string]$Repository, [switch]$NonInteractive, [switch]$NoPause)
+    try {
+        $directory = Get-CodexDirectory
+        Write-Host ''
+        Write-Host 'my-codex setup' -ForegroundColor Cyan
+        Write-Host "Source: $Repository"
+        Write-Host "Destination: $(Join-Path $directory 'AGENTS.md')"
+        Write-Host 'This file contains global instructions used across your Codex projects.'
+        Write-Host 'Credentials, sessions, Skills, and other settings are kept.'
+        $target = Join-Path $directory 'AGENTS.md'
+        $snapshot = Join-Path $directory '.my-codex/installed.md'
+        if (Test-Entry $snapshot) {
+            Write-Host 'Status: managed installation found.'
+            if (!(Test-SameBytes $target $snapshot)) { Write-Host 'AGENTS.md differs from the saved installation. A separate conflict choice will protect your edits.' }
+        } elseif (Test-Entry $target) {
+            Write-Host 'Status: existing AGENTS.md is not managed by this installer. Installation will ask how to handle it.'
+        } else { Write-Host 'Status: no installed AGENTS.md found.' }
+        Write-Host ''
+        switch ($Mode) {
+            'install' {
+                Write-Host "Install creates $target from the five source modules."
+                Write-Host "It also creates $snapshot to track this installation."
+                Write-Host 'An existing unmanaged or manually edited AGENTS.md requires a separate keep/backup/replace choice.'
+                Write-Host 'An unchanged managed installation is kept. Use update.ps1 to apply new source instructions.'
+            }
+            'update' {
+                Write-Host "Update replaces $target and $snapshot with the current source instructions."
+                Write-Host 'The previous managed contents are replaced. Manual edits require a separate keep/backup/replace choice.'
+                Write-Host 'Update requires an existing managed installation. It does not create one.'
+            }
+            'uninstall' {
+                Write-Host "Uninstall deletes $target and $snapshot only if this installation owns them."
+                Write-Host 'Manual edits require a separate keep/backup/remove choice. Unmanaged instructions are kept.'
+                Write-Host 'Existing backups and other files in the Codex directory are kept.'
+            }
+        }
+        if (!$NonInteractive) {
+            $answer = Read-SetupInput "Are you sure you want to $Mode ? [y/N]"
+            if ($answer -notmatch '^(?i:y|yes)$') { Write-Host 'Cancelled. No files changed.'; return 0 }
+        }
+        Write-Host "Checking files and running $Mode..."
+        Invoke-Configuration -Mode $Mode -Repository $Repository -Interactive:(!$NonInteractive) | Out-Host
+        Write-Host 'Finished. Review the result above.' -ForegroundColor Green
+        return 0
+    } catch {
+        Write-Host ''
+        Write-Host "Setup failed: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host 'Details and recovery guidance: docs/installation.md'
+        return 1
+    } finally {
+        if (!$NonInteractive -and !$NoPause) { $null = Read-SetupInput 'Press Enter to close' }
+    }
+}
+
 function Invoke-Configuration {
-    param([ValidateSet('install', 'update', 'uninstall')][string]$Mode, [string]$Repository)
+    param([ValidateSet('install', 'update', 'uninstall')][string]$Mode, [string]$Repository,
+        [switch]$Interactive)
     $directory = Get-CodexDirectory
     if ($Mode -eq 'uninstall' -and !(Test-Entry $directory)) {
         Write-Output "Nothing installed: $directory"
@@ -84,39 +185,67 @@ function Invoke-Configuration {
             throw 'Global AGENTS.override.md would shadow this installation. Resolve it manually.'
         }
         $managed = Test-Entry $state
+        $locallyModified = $false
+        $fileAction = 'replace'
         if ($managed) {
             if (!(Test-Path -LiteralPath $state -PathType Container) -or
                 !(Test-Path -LiteralPath $snapshot -PathType Leaf)) {
                 throw "Unrecognized installation state: $state. Inspect it manually."
             }
             if (!(Test-SameBytes $target $snapshot)) {
-                throw "Installed AGENTS.md is missing or changed: $target. Preserve your edits and resolve manually."
+                if (!(Test-Path -LiteralPath $target -PathType Leaf)) {
+                    throw "Installed AGENTS.md is missing or not a regular file: $target. Resolve manually."
+                }
+                $locallyModified = $true
             }
         }
         if ($Mode -eq 'uninstall') {
             if (!$managed) { Write-Output 'No managed installation; existing configuration preserved.'; return }
+            if ($locallyModified) {
+                $fileAction = Read-FileAction -Target $target -Action Remove -Interactive:$Interactive
+                if ($fileAction -eq 'keep') { Write-Output 'Cancelled; existing instructions preserved.'; return }
+                if ($fileAction -eq 'backup') {
+                    $backupPath = Get-InstructionBackupPath $target
+                    [IO.File]::Copy($target, $backupPath)
+                    Write-Output "Original instructions backed up to: $backupPath"
+                }
+            }
             Remove-Item -LiteralPath $target
             Remove-Item -LiteralPath $snapshot
             if (@(Get-ChildItem -LiteralPath $state -Force).Count -eq 0) { [IO.Directory]::Delete($state) }
             Write-Output "Removed managed instructions: $target. Skills and other settings were not changed."
             return
         }
-        if (!$managed -and $Mode -eq 'update') { throw 'No managed installation. Run install.ps1 first.' }
-        if (!$managed -and (Test-Entry $target)) { throw "Existing configuration preserved: $target. Review and move it aside manually." }
+        if (!$managed -and $Mode -eq 'update') { throw 'No managed installation. Run .\scripts\install.ps1 first.' }
         $generated = Join-Path $lock 'generated.md'
         Write-NewFile $generated (Get-InstructionBytes $Repository)
+        $replaceExisting = !$managed -and (Test-Entry $target)
+        if ($replaceExisting -or $locallyModified) {
+            if (!(Test-Path -LiteralPath $target -PathType Leaf)) {
+                throw "Expected a regular file at $target. Existing entry preserved."
+            }
+            $fileAction = Read-FileAction -Target $target -Action Replace -Interactive:$Interactive
+            if ($fileAction -eq 'keep') {
+                Write-Output 'Cancelled; existing instructions preserved.'
+                return
+            }
+        }
         if ($managed) {
-            if (Test-SameBytes $target $generated) { Write-Output "Already installed and unchanged: $target"; return }
-            if ($Mode -ne 'update') { throw 'Source instructions changed. Run .\scripts\update.ps1. Existing instructions were preserved.' }
+            if (!$locallyModified -and (Test-SameBytes $target $generated)) { Write-Output "Already installed and unchanged: $target"; return }
+            if ($Mode -ne 'update' -and !$locallyModified) { throw 'Source instructions changed. Run .\scripts\update.ps1. Existing instructions were preserved.' }
             $nextSnapshot = Join-Path $lock 'installed.md'
             [IO.File]::Copy($generated, $nextSnapshot)
-            [IO.File]::Replace($generated, $target, [NullString]::Value)
+            Publish-InstructionReplacement -Source $generated -Target $target -Backup:($fileAction -eq 'backup')
             [IO.File]::Replace($nextSnapshot, $snapshot, [NullString]::Value)
             Write-Output "Updated managed instructions: $target. Start a new Codex session."
         } else {
             $null = New-Item -ItemType Directory -Path $state -ErrorAction Stop
             [IO.File]::Copy($generated, $snapshot)
-            try { [IO.File]::Move($generated, $target) }
+            try {
+                if ($replaceExisting) {
+                    Publish-InstructionReplacement -Source $generated -Target $target -Backup:($fileAction -eq 'backup')
+                } else { [IO.File]::Move($generated, $target) }
+            }
             catch {
                 Remove-Item -LiteralPath $snapshot
                 if (@(Get-ChildItem -LiteralPath $state -Force).Count -eq 0) { [IO.Directory]::Delete($state) }

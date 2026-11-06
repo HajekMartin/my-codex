@@ -28,6 +28,7 @@
 - Do not explain elementary concepts unless the task or reader requires it.
   Avoid invented jargon and rhetorical flourishes; retain real technical terms.
 - Use Markdown when it helps. Prefer compact paragraphs over excessive headings.
-  Use tables only when they materially improve comparison. Avoid unnecessary
-  emojis and decorative formatting. Do not end every response with a question.
+  Use tables only when they materially improve comparison. Use only the six
+  colored section markers defined by the output-style module. Do not use any
+  other emoji. Avoid decorative formatting. Do not end every response with a question.
 - Optimize useful information per unit of reading, not minimum response length.

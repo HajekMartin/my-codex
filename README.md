@@ -11,7 +11,7 @@ instructions and specialized workflows in Git, with safe installation and update
 | --- | --- |
 | [Communication](config/communication/README.md) | Automatic response language detection, concise writing, consistent technical terminology |
 | [Autonomy](config/autonomy/README.md) | Independent decisions, fewer unnecessary questions, task completion and verification |
-| [Output Style](config/output-style/README.md) | Structured, readable responses inspired by Busy Lukas |
+| [Output Style](config/output-style/README.md) | Complete Busy Lukas rules, colored sections, simple wording, no other emoji |
 | [Git Workflow](config/git/README.md) | Task branches, repository checks, correct commit identity, and safe publication |
 | [Skills](skills/README.md) | Reusable workflows for specialized tasks |
 | [Installation](docs/installation.md) | Safe deployment and updates on macOS, Linux, and Windows |
@@ -47,6 +47,7 @@ my-codex/
     |-- update.ps1
     |-- uninstall.sh
     |-- uninstall.ps1
+    |-- common.sh
     `-- common.ps1
 ```
 
@@ -73,13 +74,32 @@ bash scripts/install.sh
 
 **Windows PowerShell** (5.1 or 7; no WSL, Git Bash, or administrator privileges):
 
+Run **`scripts/install.ps1`** from PowerShell, or right-click it
+in File Explorer and choose **Run with PowerShell**. It explains the destination
+and changes, asks for confirmation, and waits for Enter before returning.
+
 ```powershell
 .\scripts\install.ps1
 ```
 
+All three operations live in `scripts/` on every platform:
+
+| Operation | Linux / macOS | Windows |
+| --- | --- | --- |
+| Install | `bash scripts/install.sh` | `.\scripts\install.ps1` |
+| Update | `bash scripts/update.sh` | `.\scripts\update.ps1` |
+| Uninstall | `bash scripts/uninstall.sh` | `.\scripts\uninstall.ps1` |
+
+Every script explains which files it creates, replaces, or deletes and asks
+for confirmation before changes. Enter or an unrecognized answer cancels.
+Shared functions live in `common.sh` and `common.ps1`; there are no CMD launchers.
+Automation can explicitly skip interaction with `--non-interactive` (Bash)
+or `-NonInteractive` (PowerShell).
+
 The destination is `AGENTS.md` in `CODEX_HOME`, or `~/.codex` by default
-(`$HOME\.codex` on Windows). Existing unmanaged instructions, overrides, and
-manually edited installations are preserved and reported as conflicts.
+(`$HOME\.codex` on Windows). On all platforms, conflicting instructions offer
+three choices: keep the file, replace with backup, or replace without backup.
+Enter keeps the file. Overrides and invalid installation state remain protected.
 Start a new Codex session after installing.
 
 For custom profiles, PowerShell execution-policy guidance, and conflict resolution,
@@ -129,7 +149,8 @@ For reusable global and project Skills, follow [Skills management](skills/README
 
 ## Attribution
 
-Response-style design inspired by Lukas Kellerstein's article *The model got better, and I stopped reading it*: https://kellerstein.org/blog/the-model-got-better-and-i-stopped-reading-it/
-
-The output style is independently adapted for OpenAI Codex. This does not imply
-endorsement, collaboration, or official affiliation with the author or OpenAI.
+The output module incorporates Lukas Kellerstein's complete [Busy Lukas style](https://blog.kellerstein.org/output-styles/busy-lukas.md),
+described in [The model got better, and I stopped reading it](https://blog.kellerstein.org/blog/the-model-got-better-and-i-stopped-reading-it/).
+Codex integration, localized labels, and the prohibition of emoji other than the six
+colored section markers are documented in the [output style guide](config/output-style/README.md#local-changes).
+This does not imply endorsement, collaboration, or official affiliation with the author or OpenAI.
