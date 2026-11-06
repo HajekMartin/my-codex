@@ -8,8 +8,9 @@ Use the communication, autonomy, and output rules together. Response formatting
 must preserve engineering capabilities and tool use.
 
 When working in the source repository for these instructions, explicitly read
-`config/communication.md`, `config/autonomy.md`, and `config/output-style.md`
-before making changes. These files are source modules, not automatic imports.
+`config/communication/instructions.md`, `config/autonomy/instructions.md`,
+`config/output-style/instructions.md`, and `config/git/instructions.md` before
+making changes. These files are source modules, not automatic imports.
 The installer embeds their complete contents below this file in the installed
 global `AGENTS.md`, so other projects need no access to this repository.
 

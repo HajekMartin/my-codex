@@ -9,9 +9,10 @@ instructions and specialized workflows in Git, with safe installation and update
 
 | Component | Description |
 | --- | --- |
-| [Communication](config/communication-guide.md) | Automatic response language detection, concise writing, consistent technical terminology |
-| [Autonomy](config/autonomy-guide.md) | Independent decisions, fewer unnecessary questions, task completion and verification |
-| [Output Style](config/output-style-guide.md) | Structured, readable responses inspired by Busy Lukas |
+| [Communication](config/communication/README.md) | Automatic response language detection, concise writing, consistent technical terminology |
+| [Autonomy](config/autonomy/README.md) | Independent decisions, fewer unnecessary questions, task completion and verification |
+| [Output Style](config/output-style/README.md) | Structured, readable responses inspired by Busy Lukas |
+| [Git Workflow](config/git/README.md) | Task branches, repository checks, correct commit identity, and safe publication |
 | [Skills](skills/README.md) | Reusable workflows for specialized tasks |
 | [Installation](docs/installation.md) | Safe deployment and updates on macOS, Linux, and Windows |
 
@@ -23,12 +24,18 @@ my-codex/
 |-- AGENTS.md
 |-- .gitattributes
 |-- config/
-|   |-- communication.md
-|   |-- communication-guide.md
-|   |-- autonomy.md
-|   |-- autonomy-guide.md
-|   |-- output-style.md
-|   `-- output-style-guide.md
+|   |-- communication/
+|   |   |-- instructions.md
+|   |   `-- README.md
+|   |-- autonomy/
+|   |   |-- instructions.md
+|   |   `-- README.md
+|   |-- output-style/
+|   |   |-- instructions.md
+|   |   `-- README.md
+|   `-- git/
+|       |-- instructions.md
+|       `-- README.md
 |-- docs/
 |   `-- installation.md
 |-- skills/
@@ -43,7 +50,7 @@ my-codex/
     `-- common.ps1
 ```
 
-`AGENTS.md` and the three instruction modules produce one global `AGENTS.md`.
+`AGENTS.md` and the four instruction modules produce one global `AGENTS.md`.
 The adjacent guides are human documentation and are not installed as instructions.
 `scripts/` contains installation, update, and removal scripts; `skills/` holds reusable Skill
 sources when added. No Skills are installed automatically.
@@ -112,8 +119,11 @@ settings, and manually modified instructions.
 
 ## Customization
 
-Edit [communication](config/communication.md), [autonomy](config/autonomy.md), or
-[output formatting](config/output-style.md), then run the update command.
+Edit [communication](config/communication/instructions.md),
+[autonomy](config/autonomy/instructions.md),
+[output formatting](config/output-style/instructions.md), or
+[Git workflow](config/git/instructions.md),
+then run the update command.
 Keep project conventions in each project's own `AGENTS.md`.
 For reusable global and project Skills, follow [Skills management](skills/README.md).
 

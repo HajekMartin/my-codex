@@ -1,6 +1,6 @@
 # Communication guide
 
-Runtime instructions: [communication.md](communication.md).
+Runtime instructions: [instructions.md](instructions.md).
 
 ## Language selection
 
@@ -34,4 +34,4 @@ headings, generic conclusions, and habitual follow-up questions.
 Language detection can be ambiguous in short or mixed requests. An explicit
 language preference resolves ambiguity. These are model instructions, not a
 language classifier with guaranteed behavior. See the bilingual
-[output examples](output-style-guide.md#examples).
+[output examples](../output-style/README.md#examples).

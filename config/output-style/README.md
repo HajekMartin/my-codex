@@ -1,6 +1,6 @@
 # Output style guide
 
-Runtime instructions: [output-style.md](output-style.md).
+Runtime instructions: [instructions.md](instructions.md).
 
 The independently written adaptation of Busy Lukas prioritizes readable wording,
 a direct summary, visible blockers, optional sections, and evidence. It does not
@@ -16,7 +16,7 @@ option first; review findings prioritize severity and provide evidence.
 
 Use a direct one-to-three-sentence summary first. The optional section order is
 NEEDS YOU, DONE, OPEN, PROGRESS, WATCH OUT, DETAIL. The exact Czech equivalents
-and section purposes live in the [runtime table](output-style.md). Localize all
+and section purposes live in the [runtime table](instructions.md). Localize all
 labels and prose consistently, while preserving code and technical identifiers.
 
 Simple answers use plain prose. Omit empty sections and unnecessary headings.
